@@ -29,6 +29,11 @@ class ConfigStorage {
                     channelId: null,
                     roleId: null,
                     isActive: false
+                },
+                smokingChecker: {
+                    channelId: null,
+                    roleId: null,
+                    isActive: false
                 }
             };
         } catch (error) {
@@ -36,6 +41,11 @@ class ConfigStorage {
             // Return default config on error
             return {
                 chatGptChecker: {
+                    channelId: null,
+                    roleId: null,
+                    isActive: false
+                },
+                smokingChecker: {
                     channelId: null,
                     roleId: null,
                     isActive: false

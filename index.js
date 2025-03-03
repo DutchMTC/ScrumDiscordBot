@@ -219,6 +219,12 @@ client.on('interactionCreate', async interaction => {
             disabledUntil = result;
         } else if (interaction.commandName === 'setup-chatgpt-checker') {
             chatGptChecker.updateConfig(result);
+        } else if (interaction.commandName === 'setup-smoking-checker') {
+            chatGptChecker.updateSmokingConfig(result);
+        } else if (interaction.commandName === 'toggle-smoking-checker') {
+            chatGptChecker.updateSmokingConfig({ isActive: result.isActive });
+        } else if (interaction.commandName === 'toggle-chatgpt-checker') {
+            chatGptChecker.updateConfig({ isActive: result.isActive });
         }
     } catch (error) {
         console.error(error);
