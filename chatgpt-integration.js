@@ -8,7 +8,7 @@ const ConfigStorage = require('./utils/config-storage');
  * ChatGPT Role Checker Integration
  * This script provides functionality for:
  * 1. Checking messages in specific channels using ChatGPT API for absence
- * 2. Checking all messages for smoking references
+ * 2. Checking messages in specific channels for smoking references
  * 3. Assigning absence roles based on ChatGPT responses
  * 4. Automatically removing roles at midnight
  */
@@ -31,8 +31,9 @@ class ChatGptIntegration {
         // Load smoking checker config
         const savedSmokingConfig = config.smokingChecker || {};
         this.smokingConfig = {
+            channelId: savedSmokingConfig.channelId || null,
             isActive: savedSmokingConfig.isActive || false,
-            // No channelId or roleId needed as it works in all channels
+            // No roleId needed as it doesn't assign a role
             sillyResponses: [
                 "🚬 Smoking detected! Remember, smoking is bad for your health... and your wallet! 💸",
                 "🚬 Someone's taking a smoke break! Did you know that the smoke from one cigarette contains over 7,000 chemicals? 😮",
@@ -74,10 +75,13 @@ class ChatGptIntegration {
             // Always retain the silly responses
             sillyResponses: this.smokingConfig.sillyResponses 
         };
-        console.log(`Smoking checker config updated: ${JSON.stringify({ isActive: this.smokingConfig.isActive })}`);
+        console.log(`Smoking checker config updated:`, config);
         
-        // Save the updated configuration (only save the isActive state)
-        ConfigStorage.updateSection('smokingChecker', { isActive: this.smokingConfig.isActive });
+        // Save the updated configuration
+        ConfigStorage.updateSection('smokingChecker', { 
+            isActive: this.smokingConfig.isActive,
+            channelId: this.smokingConfig.channelId
+        });
     }
     
     // Set up Discord.js event listeners
@@ -129,8 +133,11 @@ class ChatGptIntegration {
                 }
             }
             
-            // Check ALL messages for smoking detection if it's active
-            if (this.smokingConfig.isActive) {
+            // Check for smoking detection in specific channel
+            if (this.smokingConfig.isActive && 
+                this.smokingConfig.channelId && 
+                message.channel.id === this.smokingConfig.channelId) {
+                
                 try {
                     const isSmoking = await this.checkWithChatGpt(message.content, 'smoking');
                     
