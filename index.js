@@ -3,6 +3,7 @@ const { Client, GatewayIntentBits, EmbedBuilder, REST, Routes } = require('disco
 const cron = require('node-cron');
 const fs = require('fs');
 const path = require('path');
+const ChatGptIntegration = require('./chatgpt-integration');
 
 const client = new Client({
     intents: [
@@ -18,6 +19,7 @@ let scheduledTask = null;
 let reminderTask = null;
 let messageTracker = new Map(); // Tracks who has sent messages for the day
 let currentThreadId = null; // Tracks the current day's thread
+let chatGptChecker = null; // Will hold our ChatGPT integration instance
 
 // Function to reset the message tracker
 function resetMessageTracker() {
@@ -162,6 +164,10 @@ async function registerCommands() {
 
 client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
+    
+    // Initialize ChatGPT integration
+    chatGptChecker = new ChatGptIntegration(client);
+    
     await registerCommands();
     startScheduledTask();
 });
@@ -202,7 +208,8 @@ client.on('interactionCreate', async interaction => {
             messageTracker,
             resetMessageTracker,
             sendReminders,
-            currentThreadId
+            currentThreadId,
+            chatGptChecker // Pass the ChatGPT integration to commands
         };
         
         const result = await command.execute(interaction, context);
@@ -210,6 +217,8 @@ client.on('interactionCreate', async interaction => {
             disabledUntil = result;
         } else if (interaction.commandName === 'enable') {
             disabledUntil = result;
+        } else if (interaction.commandName === 'setup-chatgpt-checker') {
+            chatGptChecker.updateConfig(result);
         }
     } catch (error) {
         console.error(error);
