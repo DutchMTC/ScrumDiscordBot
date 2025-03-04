@@ -222,7 +222,8 @@ client.on('interactionCreate', async interaction => {
             resetMessageTracker,
             sendReminders,
             currentThreadId,
-            chatGptChecker // Pass the ChatGPT integration to commands
+            chatGptChecker, // Pass the ChatGPT integration to commands
+            scheduledTask  // Expose scheduledTask to commands
         };
         
         const result = await command.execute(interaction, context);
@@ -238,6 +239,11 @@ client.on('interactionCreate', async interaction => {
             chatGptChecker.updateSmokingConfig({ isActive: result.isActive });
         } else if (interaction.commandName === 'toggle-chatgpt-checker') {
             chatGptChecker.updateConfig({ isActive: result.isActive });
+        } else if (interaction.commandName === 'edit-standdown-time') {
+            // If stand-down time was changed, update our reference to the scheduled task
+            if (result && result.hours !== undefined && result.minutes !== undefined) {
+                console.log(`Stand-down time updated to ${result.hours}:${result.minutes}`);
+            }
         }
     } catch (error) {
         console.error(error);
