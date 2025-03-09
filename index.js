@@ -46,8 +46,17 @@ async function createDailyThread(channel) {
     // Get all guild members and mention them
     const guild = channel.guild;
     const members = await guild.members.fetch();
-    const nonBotMembers = members.filter(member => !member.user.bot);
-    const mentions = nonBotMembers.map(member => `<@${member.id}>`).join(' ');
+    
+    // Get the absence role ID from config or use the constant
+    const absenceRoleId = chatGptChecker?.absenceConfig?.roleId || '1346230983296548967';
+    
+    // Filter out bots and members who have the absence role
+    const activeMembers = members.filter(member => 
+        !member.user.bot && 
+        !member.roles.cache.has(absenceRoleId)
+    );
+    
+    const mentions = activeMembers.map(member => `<@${member.id}>`).join(' ');
 
     // Create and send the embed in the thread
     const embed = new EmbedBuilder()
@@ -98,9 +107,13 @@ async function sendReminders() {
     const guild = channel.guild;
     const members = await guild.members.fetch();
     
+    // Get the absence role ID from config or use the constant
+    const absenceRoleId = chatGptChecker?.absenceConfig?.roleId || '1346230983296548967';
+    
     const missingMessages = members.filter(member => 
         !member.user.bot && // Not a bot
-        !messageTracker.has(member.id) // Hasn't sent a message
+        !messageTracker.has(member.id) && // Hasn't sent a message
+        !member.roles.cache.has(absenceRoleId) // Not marked as absent
     );
 
     if (missingMessages.size > 0) {
@@ -209,7 +222,8 @@ client.on('interactionCreate', async interaction => {
             resetMessageTracker,
             sendReminders,
             currentThreadId,
-            chatGptChecker // Pass the ChatGPT integration to commands
+            chatGptChecker, // Pass the ChatGPT integration to commands
+            scheduledTask  // Expose scheduledTask to commands
         };
         
         const result = await command.execute(interaction, context);
@@ -225,6 +239,11 @@ client.on('interactionCreate', async interaction => {
             chatGptChecker.updateSmokingConfig({ isActive: result.isActive });
         } else if (interaction.commandName === 'toggle-chatgpt-checker') {
             chatGptChecker.updateConfig({ isActive: result.isActive });
+        } else if (interaction.commandName === 'edit-standdown-time') {
+            // If stand-down time was changed, update our reference to the scheduled task
+            if (result && result.hours !== undefined && result.minutes !== undefined) {
+                console.log(`Stand-down time updated to ${result.hours}:${result.minutes}`);
+            }
         }
     } catch (error) {
         console.error(error);
