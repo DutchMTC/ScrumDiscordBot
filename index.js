@@ -120,7 +120,7 @@ function startScheduledTask() {
     });
 
     // Original daily update at 3:45 PM
-    scheduledTask = cron.schedule('45 15 * * 1-5', async () => {
+    scheduledTask = cron.schedule('45 15 * * 1-4', async () => {
         await sendDailyEmbed();
         resetMessageTracker(); // Reset tracker when daily message is sent
     }, {
@@ -128,7 +128,7 @@ function startScheduledTask() {
     });
 
     // Reminder at 8 PM
-    reminderTask = cron.schedule('0 20 * * 1-5', sendReminders, {
+    reminderTask = cron.schedule('0 20 * * 1-4', sendReminders, {
         timezone: "Europe/Amsterdam"
     });
 }

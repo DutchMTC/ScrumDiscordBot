@@ -222,7 +222,7 @@ class ChatGptIntegration {
             let prompt = '';
             
             if (type === 'absence') {
-                prompt = `Evaluate this message and decide if this person is absent today. Respond with ONLY 'yes' or 'no':\n\n${messageContent}`;
+                prompt = `Evaluate this message and decide if this person is absent all day today. Respond with no if you think this person is only partially absent today. Respond with ONLY 'yes' or 'no':\n\n${messageContent}`;
             }
             else if (type === 'smoking') {
                 prompt = `Evaluate this message and determine if this person is indicating they're smoking today, going on a smoke break, or mentioning cigarettes/smoking in any way. Respond with ONLY 'yes' or 'no':\n\n${messageContent}`;
