@@ -17,6 +17,13 @@ function loadExcludedUsers() {
 
 function saveExcludedUsers(excludedUsers) {
     try {
+        // Create the config directory if it doesn't exist
+        const configDir = path.dirname(excludedUsersPath);
+        if (!fs.existsSync(configDir)) {
+            fs.mkdirSync(configDir, { recursive: true });
+        }
+        
+        // Write the file
         fs.writeFileSync(excludedUsersPath, JSON.stringify(excludedUsers, null, 4));
     } catch (error) {
         console.error('Error saving excluded users:', error);
