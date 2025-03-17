@@ -120,7 +120,7 @@ async function sendReminders() {
         const mentions = missingMessages.map(member => `<@${member.id}>`).join(' ');
         await thread.send(
             `❗ ${mentions} ❗` +
-            `\n❗ Please don't forget to do your stand-downs before the end of the day! ❗`
+            `❗ Please don't forget to do your stand-downs before the end of the day! ❗`
         );
     }
 }
