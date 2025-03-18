@@ -42,6 +42,16 @@ async function createDailyThread(channel) {
     });
 
     currentThreadId = thread.id; // Set the current thread ID
+    
+    const excludedUsersPath = path.join(__dirname, 'config', 'excludedUsers.json');
+    let excludedUsers = [];
+    try {
+        const data = fs.readFileSync(excludedUsersPath, 'utf8');
+        excludedUsers = JSON.parse(data).excludedUsers || [];
+        console.log('Loaded excluded users:', excludedUsers); // Debug log
+    } catch (error) {
+        console.error('Error loading excluded users:', error);
+    }
 
     // Get all guild members and mention them
     const guild = channel.guild;
@@ -50,11 +60,17 @@ async function createDailyThread(channel) {
     // Get the absence role ID from config or use the constant
     const absenceRoleId = chatGptChecker?.absenceConfig?.roleId || '1346230983296548967';
     
-    // Filter out bots and members who have the absence role
-    const activeMembers = members.filter(member => 
-        !member.user.bot && 
-        !member.roles.cache.has(absenceRoleId)
-    );
+    // Filter out bots, members with absence role, and excluded users
+    const activeMembers = members.filter(member => {
+        // Debug log
+        if (excludedUsers.includes(member.id)) {
+            console.log(`Excluding user from mentions: ${member.user.username} (${member.id})`);
+        }
+        
+        return !member.user.bot && 
+               !member.roles.cache.has(absenceRoleId) &&
+               !excludedUsers.includes(member.id);
+    });
     
     const mentions = activeMembers.map(member => `<@${member.id}>`).join(' ');
 
@@ -72,9 +88,7 @@ async function createDailyThread(channel) {
         })});
 
     // Send embed and welcome message in thread
-    await thread.send(
-        `${mentions}`
-    );
+    await thread.send(`${mentions}`);
     await thread.send({ embeds: [embed] });
 
     return thread;
@@ -103,25 +117,43 @@ async function sendReminders() {
 
     const thread = await channel.threads.fetch(currentThreadId);
     if (!thread) return;
+    
+    const excludedUsersPath = path.join(__dirname, 'config', 'excludedUsers.json');
+    let excludedUsers = [];
+    try {
+        const data = fs.readFileSync(excludedUsersPath, 'utf8');
+        excludedUsers = JSON.parse(data).excludedUsers || [];
+        console.log('Reminder - loaded excluded users:', excludedUsers);
+    } catch (error) {
+        console.error('Error loading excluded users:', error);
+    }
 
     const guild = channel.guild;
     const members = await guild.members.fetch();
     
-    // Get the absence role ID from config or use the constant
     const absenceRoleId = chatGptChecker?.absenceConfig?.roleId || '1346230983296548967';
     
-    const missingMessages = members.filter(member => 
-        !member.user.bot && // Not a bot
-        !messageTracker.has(member.id) && // Hasn't sent a message
-        !member.roles.cache.has(absenceRoleId) // Not marked as absent
-    );
+    const missingMessages = members.filter(member => {
+        // Debug logging for excluded users
+        if (excludedUsers.includes(member.id)) {
+            console.log(`Reminder - excluding user: ${member.user.username} (${member.id})`);
+        }
+        
+        return !member.user.bot && // Not a bot
+               !messageTracker.has(member.id) && // Hasn't sent a message
+               !member.roles.cache.has(absenceRoleId) && // Not marked as absent
+               !excludedUsers.includes(member.id); // Not in excluded users list
+    });
 
     if (missingMessages.size > 0) {
+        console.log(`Sending reminders to ${missingMessages.size} members`);
         const mentions = missingMessages.map(member => `<@${member.id}>`).join(' ');
         await thread.send(
             `❗ ${mentions} ❗` +
-            `❗ Please don't forget to do your stand-downs before the end of the day! ❗`
+            `\n❗ Please don't forget to do your stand-downs before the end of the day! ❗`
         );
+    } else {
+        console.log('No reminders needed - all users have messaged, are absent, or excluded');
     }
 }
 
